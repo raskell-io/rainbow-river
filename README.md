@@ -1,8 +1,20 @@
-# Rainbow River
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/brand/wordmark-dark.png">
+    <img src="assets/brand/wordmark-light.png" alt="Rainbow River" width="420">
+  </picture>
+</p>
 
-A fishing game inspired by *The Legend of the River King*, and the first
-cart for [WASM-AD](https://github.com/raskell-io/wasm-ad), a fantasy console
-with Game Boy Advance–style hardware whose cartridges are WebAssembly modules.
+<p align="center"><b>A fishing game inspired by <i>The Legend of the River King</i>.</b></p>
+
+<p align="center">
+  <a href="https://wasmad.raskell.io/play/?cart=../carts/rainbow-river.wasm"><b>Play in your browser</b></a> ·
+  <a href="https://wasmad.raskell.io">WASM-AD</a>
+</p>
+
+Rainbow River is the first cart for [WASM-AD](https://github.com/raskell-io/wasm-ad),
+a fantasy console with Game Boy Advance–style hardware whose cartridges are
+WebAssembly modules.
 
 ```sh
 make serve     # builds the cart and the WASM-AD player; http://localhost:8642/?cart=carts/rainbow-river.wasm
