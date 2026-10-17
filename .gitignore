@@ -1,3 +1,4 @@
 /target
 /web
 .DS_Store
+/dist

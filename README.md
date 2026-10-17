@@ -8,7 +8,7 @@
 <p align="center"><b>A fishing game inspired by <i>The Legend of the River King</i>.</b></p>
 
 <p align="center">
-  <a href="https://wasmad.raskell.io/play/?cart=../carts/rainbow-river.wasm"><b>Play in your browser</b></a> ·
+  <a href="https://rainbowriver.raskell.io"><b>Play in your browser</b></a> ·
   <a href="https://wasmad.raskell.io">WASM-AD</a>
 </p>
 
@@ -17,7 +17,8 @@ a fantasy console with Game Boy Advance–style hardware whose cartridges are
 WebAssembly modules.
 
 ```sh
-make serve     # builds the cart and the WASM-AD player; http://localhost:8642/?cart=carts/rainbow-river.wasm
+make serve       # builds the cart and the WASM-AD player; http://localhost:8642/?cart=carts/rainbow-river.wasm
+make site-serve  # the website: http://localhost:8645/
 make test
 ```
 

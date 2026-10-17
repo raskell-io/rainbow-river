@@ -3,7 +3,10 @@ PORT ?= 8642
 WASM := target/wasm32-unknown-unknown/release/rainbow_river.wasm
 CART := web/carts/rainbow-river.wasm
 
-.PHONY: build player serve test clean
+DIST := dist
+SITE_PORT ?= 8645
+
+.PHONY: build player serve site site-serve test clean
 
 # The cart: a WASM-AD .wasm module.
 build:
@@ -17,15 +20,28 @@ build:
 # The WASM-AD web player, copied from a wasm-ad checkout.
 player:
 	$(MAKE) -C $(WASM_AD) player
-	cp $(WASM_AD)/player/web/index.html $(WASM_AD)/player/web/player.js $(WASM_AD)/player/web/core.wasm web/
+	cp $(WASM_AD)/player/web/index.html $(WASM_AD)/player/web/player.js $(WASM_AD)/player/web/wasm-ad.js $(WASM_AD)/player/web/core.wasm web/
 
 serve: build player
 	@echo "http://localhost:$(PORT)/?cart=carts/rainbow-river.wasm"
 	python3 -m http.server $(PORT) --directory web
+
+# The website: site/ plus the WASM-AD player and the cart, in dist/.
+site: build
+	$(MAKE) -C $(WASM_AD) player
+	rm -rf $(DIST)
+	mkdir -p $(DIST)/play $(DIST)/carts
+	cp -R site/. $(DIST)/
+	cp $(WASM_AD)/player/web/index.html $(WASM_AD)/player/web/player.js $(WASM_AD)/player/web/wasm-ad.js $(WASM_AD)/player/web/core.wasm $(DIST)/play/
+	cp $(CART) $(DIST)/carts/
+
+site-serve: site
+	@echo "http://localhost:$(SITE_PORT)/"
+	python3 -m http.server $(SITE_PORT) --directory $(DIST)
 
 test:
 	cargo test
 
 clean:
 	cargo clean
-	rm -rf web
+	rm -rf web $(DIST)

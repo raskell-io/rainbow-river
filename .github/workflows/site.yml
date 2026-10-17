@@ -1,0 +1,42 @@
+name: Site
+
+# Builds the website and pushes it to the `pages` branch, which the
+# Cloudflare Pages project `rainbowriver-raskell-io` serves at
+# rainbowriver.raskell.io.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: site
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # The WASM-AD player (wasm-ad.js and the reference renderer) ships with the site.
+      - uses: actions/checkout@v4
+        with:
+          repository: raskell-io/wasm-ad
+          path: wasm-ad
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test
+      - run: make site WASM_AD=wasm-ad
+      - name: Publish to the pages branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: pages
+          publish_dir: ./dist
+          force_orphan: true
+          commit_message: "deploy: ${{ github.sha }}"
