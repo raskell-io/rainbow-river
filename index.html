@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rainbow River · a pocket fishing game</title>
+  <meta name="description" content="Rainbow River is a fishing game in the spirit of The Legend of the River King. Cast, wait for the bite, reel it in — free in your browser, on the WASM-AD fantasy console.">
+  <meta property="og:title" content="Rainbow River">
+  <meta property="og:description" content="A pocket fishing game for the WASM-AD fantasy console. Free in your browser.">
+  <meta property="og:image" content="assets/hero.png">
+  <link rel="icon" href="assets/fish/trout.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Chakra+Petch:ital,wght@1,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="nav">
+    <a class="brand" href="#top" aria-label="Rainbow River home"><span class="rainbow">Rainbow</span> <span class="river">River</span></a>
+    <div class="nav-links">
+      <a href="#play">Play</a>
+      <a href="#how">How to fish</a>
+      <a href="#log">Fish log</a>
+      <a href="#controls">Controls</a>
+      <a href="https://github.com/raskell-io/rainbow-river" class="gh">GitHub</a>
+    </div>
+  </nav>
+
+  <header class="hero" id="top">
+    <div class="hero-sky" aria-hidden="true"></div>
+    <div class="hero-copy">
+      <p class="eyebrow">A WASM-AD cart · Free in your browser</p>
+      <h1>A quiet morning on the river.</h1>
+      <p class="lede">
+        Wander the riverbank, cast into the current or the still pond, and fill your fish log.
+        Nine species, from the tiny dace to the legendary golden salmon, in a pocket fishing game
+        made in the spirit of <i>The Legend of the River King</i>.
+      </p>
+      <div class="ctas">
+        <a class="btn primary" href="#play" id="play-cta">▶ Play now</a>
+        <a class="btn" href="#log">See the fish log</a>
+      </div>
+    </div>
+
+    <div class="dock" id="play">
+      <div class="console" id="handheld">
+        <svg viewBox="0 0 1000 560" aria-hidden="false" role="group" aria-label="WASM-AD handheld">
+          <defs>
+            <linearGradient id="shell" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#5fe0d2"/>
+              <stop offset="0.45" stop-color="#24a7a4"/>
+              <stop offset="1" stop-color="#136f75"/>
+            </linearGradient>
+            <radialGradient id="sheen" cx="0.3" cy="0.05" r="0.7">
+              <stop offset="0" stop-color="#fff" stop-opacity="0.38"/>
+              <stop offset="0.5" stop-color="#fff" stop-opacity="0.06"/>
+              <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+            </radialGradient>
+            <linearGradient id="shoulder" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#a6f0e6"/>
+              <stop offset="1" stop-color="#2a9e9b"/>
+            </linearGradient>
+            <linearGradient id="lens" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#2b2d3b"/>
+              <stop offset="1" stop-color="#191a24"/>
+            </linearGradient>
+            <linearGradient id="glare" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#fff" stop-opacity="0.10"/>
+              <stop offset="0.4" stop-color="#fff" stop-opacity="0.02"/>
+              <stop offset="0.41" stop-color="#fff" stop-opacity="0"/>
+            </linearGradient>
+            <radialGradient id="recess" cx="0.5" cy="0.4" r="0.6">
+              <stop offset="0.7" stop-color="#157a7d"/>
+              <stop offset="1" stop-color="#0f5d62"/>
+            </radialGradient>
+            <linearGradient id="dpad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#3d3c52"/>
+              <stop offset="1" stop-color="#1f1e2c"/>
+            </linearGradient>
+            <radialGradient id="button" cx="0.38" cy="0.3" r="0.75">
+              <stop offset="0" stop-color="#f1eefe"/>
+              <stop offset="0.55" stop-color="#bdb6e4"/>
+              <stop offset="1" stop-color="#8a82bd"/>
+            </radialGradient>
+            <filter id="drop" x="-10%" y="-10%" width="120%" height="140%">
+              <feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#000" flood-opacity="0.55"/>
+            </filter>
+          </defs>
+
+          <!-- shoulder buttons, behind the shell -->
+          <path class="key" data-key="l" d="M64 172C70 86 150 20 262 14H332Q346 14 346 28V42H250C152 42 94 98 86 174Z" fill="url(#shoulder)" stroke="#0d4a50" stroke-width="3"/>
+          <path class="key" data-key="r" transform="matrix(-1 0 0 1 1000 0)" d="M64 172C70 86 150 20 262 14H332Q346 14 346 28V42H250C152 42 94 98 86 174Z" fill="url(#shoulder)" stroke="#0d4a50" stroke-width="3"/>
+
+          <!-- shell -->
+          <g filter="url(#drop)">
+            <path d="M250 26H750C905 26 994 118 994 290C994 450 915 540 790 540H640C590 540 560 530 500 530C440 530 410 540 360 540H210C85 540 6 450 6 290C6 118 95 26 250 26Z" fill="url(#shell)" stroke="#0b4248" stroke-width="3"/>
+          </g>
+          <path d="M250 26H750C905 26 994 118 994 290C994 450 915 540 790 540H640C590 540 560 530 500 530C440 530 410 540 360 540H210C85 540 6 450 6 290C6 118 95 26 250 26Z" fill="url(#sheen)"/>
+          <path d="M252 33H748C896 33 986 122 986 290" fill="none" stroke="#fff" stroke-opacity="0.35" stroke-width="2"/>
+          <text x="196" y="66" class="emboss">L</text>
+          <text x="804" y="66" class="emboss">R</text>
+
+          <!-- lens -->
+          <rect x="226" y="48" width="548" height="430" rx="26" fill="url(#lens)" stroke="#11121a" stroke-width="3"/>
+          <rect x="254" y="74" width="492" height="334" rx="6" fill="#06060a"/>
+          <rect x="226" y="48" width="548" height="430" rx="26" fill="url(#glare)"/>
+          <circle cx="240" cy="104" r="5.5" fill="#3dff9a" class="led"/>
+          <text x="240" y="160" class="lens-label" transform="rotate(-90 240 160)">POWER</text>
+          <text x="522" y="455" class="lens-logo" text-anchor="end">WASM</text>
+          <polygon points="539,428 594,428 586,458 531,458" fill="#b7a4ff"/>
+          <text x="562" y="452" class="lens-chip" text-anchor="middle">AD</text>
+
+          <!-- d-pad -->
+          <circle cx="120" cy="250" r="70" fill="url(#recess)"/>
+          <circle cx="120" cy="250" r="70" fill="none" stroke="#fff" stroke-opacity="0.12" stroke-width="2"/>
+          <g class="dpad">
+            <rect x="101" y="190" width="38" height="120" rx="7" fill="url(#dpad)"/>
+            <rect x="60" y="231" width="120" height="38" rx="7" fill="url(#dpad)"/>
+            <rect x="104" y="193" width="32" height="3" rx="1.5" fill="#fff" opacity="0.18"/>
+            <rect x="63" y="234" width="38" height="3" rx="1.5" fill="#fff" opacity="0.18"/>
+            <path d="M120 200l-7 9h14z M120 300l-7-9h14z M70 250l9-7v14z M170 250l-9-7v14z" fill="#55546e"/>
+            <circle cx="120" cy="250" r="11" fill="#191823"/>
+            <rect class="key hit" data-key="up" x="101" y="190" width="38" height="46" rx="7"/>
+            <rect class="key hit" data-key="down" x="101" y="264" width="38" height="46" rx="7"/>
+            <rect class="key hit" data-key="left" x="60" y="231" width="46" height="38" rx="7"/>
+            <rect class="key hit" data-key="right" x="134" y="231" width="46" height="38" rx="7"/>
+          </g>
+
+          <!-- A / B -->
+          <circle cx="900" cy="222" r="42" fill="url(#recess)"/>
+          <circle cx="826" cy="274" r="42" fill="url(#recess)"/>
+          <g class="key btn-round" data-key="a"><circle cx="900" cy="222" r="34" fill="url(#button)" stroke="#2f7f86" stroke-width="2"/></g>
+          <g class="key btn-round" data-key="b"><circle cx="826" cy="274" r="34" fill="url(#button)" stroke="#2f7f86" stroke-width="2"/></g>
+          <text x="900" y="290" class="emboss" text-anchor="middle">A</text>
+          <text x="826" y="342" class="emboss" text-anchor="middle">B</text>
+
+          <!-- start / select -->
+          <circle cx="96" cy="402" r="15" fill="url(#recess)"/>
+          <circle cx="96" cy="448" r="15" fill="url(#recess)"/>
+          <g class="key btn-round" data-key="start"><circle cx="96" cy="402" r="10" fill="#2a2940" stroke="#17162a" stroke-width="2"/></g>
+          <g class="key btn-round" data-key="select"><circle cx="96" cy="448" r="10" fill="#2a2940" stroke="#17162a" stroke-width="2"/></g>
+          <text x="120" y="407" class="small-label">START</text>
+          <text x="120" y="453" class="small-label">SELECT</text>
+
+          <!-- speaker -->
+          <g fill="#0d4f55" opacity="0.9">
+            <circle cx="850" cy="410" r="4.5"/><circle cx="870" cy="404" r="4.5"/><circle cx="890" cy="398" r="4.5"/><circle cx="910" cy="392" r="4.5"/>
+            <circle cx="856" cy="430" r="4.5"/><circle cx="876" cy="424" r="4.5"/><circle cx="896" cy="418" r="4.5"/><circle cx="916" cy="412" r="4.5"/>
+            <circle cx="862" cy="450" r="4.5"/><circle cx="882" cy="444" r="4.5"/><circle cx="902" cy="438" r="4.5"/><circle cx="922" cy="432" r="4.5"/>
+            <circle cx="868" cy="470" r="4.5"/><circle cx="888" cy="464" r="4.5"/><circle cx="908" cy="458" r="4.5"/><circle cx="928" cy="452" r="4.5"/>
+          </g>
+        </svg>
+        <div class="screen">
+          <canvas id="screen" width="240" height="160"></canvas>
+          <button class="engage" id="engage">▶ Click to play</button>
+        </div>
+      </div>
+    </div>
+  </header>
+  <div class="separator" aria-hidden="true"></div>
+  <div class="status">
+    <p class="now-playing" id="now-playing">Loading the cart…</p>
+    <p class="keys"><kbd>←↑↓→</kbd> walk <kbd>X</kbd> cast / reel <kbd>Z</kbd> run <kbd>Enter</kbd> fish log · gamepads and touch work too</p>
+  </div>
+
+  <main>
+    <section class="section" id="how">
+      <div class="section-head">
+        <p class="eyebrow">How to fish</p>
+        <h2>Cast. Wait. Reel.</h2>
+        <p>Three steps, a lot of patience, and one decision that matters: when to let the line go slack.</p>
+      </div>
+      <div class="steps">
+        <figure class="step">
+          <img src="assets/shots/bite.png" alt="The bobber in the river with a ripple and an exclamation mark above the angler" width="240" height="160">
+          <figcaption><span>1</span><div><h3>Cast and watch the bobber</h3><p>Face the water and press <kbd>A</kbd>. Little dips are only nibbles. When the <b>!</b> appears and the bobber sinks, strike with <kbd>A</kbd> before the fish lets go.</p></div></figcaption>
+        </figure>
+        <figure class="step">
+          <img src="assets/shots/reel.png" alt="The reel screen with the tension meter and remaining line" width="240" height="160">
+          <figcaption><span>2</span><div><h3>Reel, but mind the tension</h3><p>Hold <kbd>A</kbd> to reel in. When the fish fights, the meter climbs fast: let go before the line snaps, then reel again as it tires.</p></div></figcaption>
+        </figure>
+        <figure class="step">
+          <img src="assets/shots/caught.png" alt="The angler holding up a caught rainbow trout" width="240" height="160">
+          <figcaption><span>3</span><div><h3>Land it and log it</h3><p>Every catch is measured and goes into your fish log. Beat your best size for a new record; your log is saved on this device.</p></div></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section" id="log">
+      <div class="section-head">
+        <p class="eyebrow">Fish log</p>
+        <h2>Nine fish to find</h2>
+        <p>Five live in the river, four in the pond. Strong fish fight harder and give you less time to strike.</p>
+      </div>
+      <div class="fish-grid">
+          <article class="fish common">
+            <div class="fish-art"><img src="assets/fish/dace.png" alt="Dace" width="128" height="128" loading="lazy"></div>
+            <div class="fish-body">
+              <h3>Dace</h3>
+              <p>Quick, silvery and everywhere. The first catch of most mornings.</p>
+              <dl>
+                <div><dt>Waters</dt><dd><span class="chip river">River</span></dd></div>
+                <div><dt>Size</dt><dd>10–20 cm</dd></div>
+                <div><dt>Rarity</dt><dd class="rarity">Common</dd></div>
+                <div><dt>Fight</dt><dd class="pips" aria-label="1 of 5"><i class="on"></i><i></i><i></i><i></i><i></i></dd></div>
+              </dl>
+            </div>
+          </article>
+          <article class="fish common">
+            <div class="fish-art"><img src="assets/fish/chub.png" alt="Chub" width="128" height="128" loading="lazy"></div>
+            <div class="fish-body">
+              <h3>Chub</h3>
+              <p>Chunky and curious, it lingers by the bridge pilings.</p>
+              <dl>
+                <div><dt>Waters</dt><dd><span class="chip river">River</span></dd></div>
+                <div><dt>Size</dt><dd>15–40 cm</dd></div>
+                <div><dt>Rarity</dt><dd class="rarity">Common</dd></div>
+                <div><dt>Fight</dt><dd class="pips" aria-label="2 of 5"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></dd></div>
+              </dl>
+            </div>
+          </article>
+          <article class="fish uncommon">
+            <div class="fish-art"><img src="assets/fish/trout.png" alt="Rainbow Trout" width="128" height="128" loading="lazy"></div>
+            <div class="fish-body">
+              <h3>Rainbow Trout</h3>
+              <p>The river's namesake. A pink stripe that flashes when it turns.</p>
+              <dl>
+                <div><dt>Waters</dt><dd><span class="chip river">River</span></dd></div>
+                <div><dt>Size</dt><dd>25–60 cm</dd></div>
+                <div><dt>Rarity</dt><dd class="rarity">Uncommon</dd></div>
+                <div><dt>Fight</dt><dd class="pips" aria-label="3 of 5"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></dd></div>
+              </dl>
+            </div>
+          </article>
+          <article class="fish rare">
+            <div class="fish-art"><img src="assets/fish/catfish.png" alt="Catfish" width="128" height="128" loading="lazy"></div>
+            <div class="fish-body">
+              <h3>Catfish</h3>
+              <p>Lurks in deep water and pulls like an anchor.</p>
+              <dl>
+                <div><dt>Waters</dt><dd><span class="chip river">River</span></dd></div>
+                <div><dt>Size</dt><dd>40–95 cm</dd></div>
+                <div><dt>Rarity</dt><dd class="rarity">Rare</dd></div>
+                <div><dt>Fight</dt><dd class="pips" aria-label="4 of 5"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></dd></div>
+              </dl>
+            </div>
+          </article>
+          <article class="fish legendary">
+            <div class="fish-art"><img src="assets/fish/salmon.png" alt="Golden Salmon" width="128" height="128" loading="lazy"></div>
+            <div class="fish-body">
+              <h3>Golden Salmon</h3>
+              <p>A legend. Some say it only bites at dawn.</p>
+              <dl>
+                <div><dt>Waters</dt><dd><span class="chip river">River</span></dd></div>
+                <div><dt>Size</dt><dd>60–110 cm</dd></div>
+                <div><dt>Rarity</dt><dd class="rarity">Legendary</dd></div>
+                <div><dt>Fight</dt><dd class="pips" aria-label="5 of 5"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></dd></div>
+              </dl>
+            </div>
+          </article>
+          <article class="fish common">
+            <div class="fish-art"><img src="assets/fish/bluegill.png" alt="Bluegill" width="128" height="128" loading="lazy"></div>
+            <div class="fish-body">
+              <h3>Bluegill</h3>
+              <p>A pond regular with a blue ear flap and a big appetite.</p>
+              <dl>
+                <div><dt>Waters</dt><dd><span class="chip pond">Pond</span></dd></div>
+                <div><dt>Size</dt><dd>10–22 cm</dd></div>
+                <div><dt>Rarity</dt><dd class="rarity">Common</dd></div>
+                <div><dt>Fight</dt><dd class="pips" aria-label="1 of 5"><i class="on"></i><i></i><i></i><i></i><i></i></dd></div>
+              </dl>
+            </div>
+          </article>
+          <article class="fish common">
+            <div class="fish-art"><img src="assets/fish/crucian.png" alt="Crucian Carp" width="128" height="128" loading="lazy"></div>
+            <div class="fish-body">
+              <h3>Crucian Carp</h3>
+              <p>Round and golden, it nibbles before it commits.</p>
+              <dl>
+                <div><dt>Waters</dt><dd><span class="chip pond">Pond</span></dd></div>
+                <div><dt>Size</dt><dd>12–30 cm</dd></div>
+                <div><dt>Rarity</dt><dd class="rarity">Common</dd></div>
+                <div><dt>Fight</dt><dd class="pips" aria-label="2 of 5"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></dd></div>
+              </dl>
+            </div>
+          </article>
+          <article class="fish uncommon">
+            <div class="fish-art"><img src="assets/fish/carp.png" alt="Carp" width="128" height="128" loading="lazy"></div>
+            <div class="fish-body">
+              <h3>Carp</h3>
+              <p>Patient, heavy and stubborn. Don't rush the reel.</p>
+              <dl>
+                <div><dt>Waters</dt><dd><span class="chip pond">Pond</span></dd></div>
+                <div><dt>Size</dt><dd>30–85 cm</dd></div>
+                <div><dt>Rarity</dt><dd class="rarity">Uncommon</dd></div>
+                <div><dt>Fight</dt><dd class="pips" aria-label="3 of 5"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></dd></div>
+              </dl>
+            </div>
+          </article>
+          <article class="fish rare">
+            <div class="fish-art"><img src="assets/fish/snakehead.png" alt="Snakehead" width="128" height="128" loading="lazy"></div>
+            <div class="fish-body">
+              <h3>Snakehead</h3>
+              <p>An ambush hunter that shakes its head when hooked.</p>
+              <dl>
+                <div><dt>Waters</dt><dd><span class="chip pond">Pond</span></dd></div>
+                <div><dt>Size</dt><dd>40–90 cm</dd></div>
+                <div><dt>Rarity</dt><dd class="rarity">Rare</dd></div>
+                <div><dt>Fight</dt><dd class="pips" aria-label="4 of 5"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></dd></div>
+              </dl>
+            </div>
+          </article>
+      </div>
+    </section>
+
+    <section class="section" id="controls">
+      <div class="section-head">
+        <p class="eyebrow">Controls</p>
+        <h2>Pick it up and play</h2>
+      </div>
+      <div class="controls">
+        <table>
+          <thead><tr><th>Action</th><th>Keyboard</th><th>Gamepad</th></tr></thead>
+          <tbody>
+            <tr><td>Walk</td><td><kbd>←↑↓→</kbd></td><td>D-pad or left stick</td></tr>
+            <tr><td>Run</td><td>hold <kbd>Z</kbd></td><td>hold B</td></tr>
+            <tr><td>Cast, strike, reel</td><td><kbd>X</kbd> (hold to reel)</td><td>A (hold to reel)</td></tr>
+            <tr><td>Fish log</td><td><kbd>Enter</kbd></td><td>Start</td></tr>
+            <tr><td>Advance text</td><td><kbd>X</kbd> or <kbd>Z</kbd></td><td>A or B</td></tr>
+          </tbody>
+        </table>
+        <p class="note">On a phone, tap the console to bring it up and use its D-pad and buttons.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="built">
+        <div>
+          <p class="eyebrow">Under the hood</p>
+          <h2>A 63 KB cart for <span class="wasmad"><b>WASM</b><i>AD</i></span></h2>
+          <p>
+            Rainbow River is a single WebAssembly module for WASM-AD, a fantasy console with
+            Game Boy Advance–style hardware. It draws by writing tiles, palettes and sprites into memory:
+            the translucent text box is an alpha-blended background layer, the bite ripple a
+            semi-transparent sprite, and the fish you hold up an affine sprite that spins into place.
+          </p>
+          <div class="ctas left">
+            <a class="btn primary" href="https://wasmad.raskell.io">Explore WASM-AD</a>
+            <a class="btn" href="https://github.com/raskell-io/rainbow-river">Source on GitHub</a>
+          </div>
+        </div>
+        <img src="assets/shots/bite.png" alt="" width="240" height="160" class="built-shot">
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p class="foot-brand"><span class="rainbow">Rainbow</span> <span class="river">River</span></p>
+    <p>MIT-licensed, made by <a href="https://www.raskell.io">raskell.io</a>. Inspired by, and not affiliated with, <i>The Legend of the River King</i>.</p>
+    <p class="dim">Pixel art generated with PixelLab.</p>
+  </footer>
+
+  <script type="module" src="site.js"></script>
+</body>
+</html>
