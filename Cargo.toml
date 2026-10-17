@@ -1,0 +1,14 @@
+[workspace]
+resolver = "3"
+members = ["game", "tools/assetc"]
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.93"
+license = "MIT"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
