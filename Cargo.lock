@@ -92,12 +92,28 @@ dependencies = [
 [[package]]
 name = "rainbow-river"
 version = "0.1.0"
+dependencies = [
+ "wasm-ad",
+]
 
 [[package]]
 name = "simd-adler32"
 version = "0.3.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3a219298ac11a56ea9a6d2120044824d6f01aeb034955e7af7bc16858527deea"
+
+[[package]]
+name = "wasm-ad"
+version = "0.1.0"
+source = "git+https://github.com/raskell-io/wasm-ad#9c5bdcec5047e2b88913f404819900d8bef466ff"
+dependencies = [
+ "wasm-ad-core",
+]
+
+[[package]]
+name = "wasm-ad-core"
+version = "0.1.0"
+source = "git+https://github.com/raskell-io/wasm-ad#9c5bdcec5047e2b88913f404819900d8bef466ff"
 
 [[package]]
 name = "zlib-rs"

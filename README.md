@@ -1,44 +1,32 @@
 # Rainbow River
 
-A Game Boy Advance–style fishing game in Rust + WebAssembly, inspired by
-*The Legend of the River King*.
+A fishing game inspired by *The Legend of the River King*, and the first
+cart for [WASM-AD](https://github.com/raskell-io/wasm-ad), a fantasy console
+with Game Boy Advance–style hardware whose cartridges are WebAssembly modules.
 
 ```sh
-make serve     # builds web/rainbow-river.wasm, serves on http://localhost:8642 (PORT=… to change)
+make serve     # builds the cart and the WASM-AD player; http://localhost:8642/?cart=carts/rainbow-river.wasm
 make test
 ```
 
-Controls: arrows/WASD move · X/K = A · Z/J = B (hold to run) · Enter = Start (fish log).
-Gamepads work too. The fish log is saved to `localStorage` like battery-backed SRAM.
+`make player` expects a wasm-ad checkout next to this one (`WASM_AD=…` to
+change). The cart itself is `web/carts/rainbow-river.wasm` and runs in any
+WASM-AD player.
+
+Controls: arrows move · X = A · Z = B (hold to run) · Enter = Start (fish log).
+The fish log is kept in WASM-AD save RAM.
 
 ## How it's built
 
-The game never touches pixels. It drives a virtual GBA picture processor
-(`game/src/ppu.rs`, tile mode 0) the way a cartridge drives the hardware:
-
-| | Rainbow River | Game Boy Advance |
-|---|---|---|
-| Screen | 240×160 | 240×160 |
-| Tiles | 8×8, 4bpp; 2048 BG + 1024 OBJ | same (8bpp mode not implemented) |
-| Palettes | 16 BG + 16 OBJ banks × 16 colors, RGB555, color 0 transparent | same |
-| Backgrounds | 4 text layers, priority 0–3, scroll, 32/64-tile maps | same (affine BGs not implemented) |
-| Sprites | 128, all 12 sizes 8×8…64×64, 1D tile mapping, priority, flips | same |
-| Rotation/scaling | 32 affine matrices, double-size flag | same |
-| Blending | alpha (EVA/EVB), brighten/darken (EVY), semi-transparent sprites | same |
-| Not yet | mosaic, windows (WIN0/WIN1/OBJ window), per-scanline effects | |
-
-Layer use in the game: BG0 text, BG1 the text panel (alpha-blended over
-the world), BG2 the world, sprites between them. The boot fade uses the
-darken unit; a fish bite shows a semi-transparent ripple sprite; a catch
-pops in with an affine sprite.
-
-The wasm interface is a handful of C-ABI exports (`rr_init`, `rr_frame`,
-`rr_framebuffer`, `rr_sram*`); `web/main.js` is the whole host: fixed
-60 Hz timestep, input bitmask in, RGBA framebuffer out. No wasm-bindgen.
+The game writes WASM-AD's memory-mapped hardware through the `wasm-ad` SDK:
+4bpp tiles in character block 0, the world map in screen block 30 streamed as
+the camera scrolls, the text box on BG0 (text) over BG1 (an alpha-blended
+panel), sprites in OAM. The boot fade uses brightness-decrease, a bite shows
+a semi-transparent ripple sprite, and a catch pops in with an affine sprite.
 
 ```
 game/src/
-  ppu.rs      virtual GBA video hardware
+  lib.rs      cart metadata and the start/update exports
   assets.rs   VRAM layout, palette banks, placeholder art, font
   art.rs      ASCII art / converted data → 4bpp tiles
   world.rs    overworld map and metatiles
@@ -46,8 +34,10 @@ game/src/
   text.rs     text box (BG0 text over BG1 panel)
   game.rs     player, camera, modes, journal, save RAM
 tools/assetc  PNG → .4bpp/.pal converter
-web/          index.html + main.js host
 ```
+
+Tests run natively against the SDK's emulated hardware; `RR_DUMP=dir cargo
+test strike` writes frames rendered by the WASM-AD reference renderer.
 
 ## Art from PixelLab
 
@@ -72,7 +62,6 @@ Colors are ordered light → dark from index 1, matching the placeholders.
 
 ## Next
 
-- Sound: GBA-style audio (the 4 legacy channels + 2 PCM) through Web Audio
+- Sound, once WASM-AD 0.2 specifies audio
 - Shore/edge metatiles, more areas, NPCs, lures and rods, day/night palettes
-- Mosaic and windows; affine backgrounds (mode 1/2) for a map or splash screen
-- Touch controls for phones
+- Raster effects (scanline callback) for shimmering water

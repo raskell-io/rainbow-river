@@ -1,20 +1,22 @@
 use crate::assets::{self, Animations, bank, obj_tile};
 use crate::fishing::{Fishing, Outcome, SPECIES};
 use crate::input::{Input, btn};
-use crate::ppu::{AffineMatrix, Blend, BlendMode, OAM_SIZE, Ppu, SCREEN_H, SCREEN_W, Sprite, SpriteSize, layer};
 use crate::rng::Rng;
 use crate::text::{self, TextBox};
 use crate::world::{self, World};
+use wasm_ad::addr::{SCREEN_H, SCREEN_W};
+use wasm_ad::{AffineMatrix, BgCnt, Sprite, SpriteSize, blend, dispcnt, layer, oam, reg, screen_block};
 
-pub const SRAM_SIZE: usize = 64;
-const SRAM_MAGIC: &[u8; 4] = b"RRVR";
-const SRAM_VERSION: u8 = 1;
+const SAVE_MAGIC: &[u8; 4] = b"RRVR";
+const SAVE_VERSION: u8 = 1;
 
 const FADE_FRAMES: u16 = 32;
 /// Layer roles: BG0 text, BG1 text panel, BG2 world.
 const WORLD_BG: usize = 2;
+const WORLD_BLOCK: u16 = 30;
 /// Sprites share the world's priority so they draw above it but below the panel.
-const SPRITE_PRIORITY: u8 = 2;
+const SPRITE_PRIORITY: u16 = 2;
+const BASE_DISPCNT: u16 = dispcnt::MODE0 | dispcnt::BG2 | dispcnt::OBJ | dispcnt::OBJ_1D;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Dir {
@@ -75,7 +77,6 @@ struct Record {
 }
 
 pub struct Game {
-    ppu: Ppu,
     input: Input,
     rng: Rng,
     world: World,
@@ -84,19 +85,19 @@ pub struct Game {
     player: Player,
     mode: Mode,
     journal: [Record; SPECIES.len()],
-    /// Battery-backed save RAM; the host persists it when `sram_dirty` is set.
-    pub sram: [u8; SRAM_SIZE],
-    pub sram_dirty: bool,
 }
 
 impl Game {
+    /// Boots the game: uploads graphics, configures layers, restores the save.
     pub fn new(seed: u32) -> Self {
-        let mut ppu = Ppu::new();
-        let anim = assets::load(&mut ppu);
-        ppu.bg[WORLD_BG].enabled = true;
+        let anim = assets::load();
+        reg::BGCNT[0].write(BgCnt::new().priority(0).screen_block(text::TEXT_BLOCK).0);
+        reg::BGCNT[1].write(BgCnt::new().priority(1).screen_block(text::PANEL_BLOCK).0);
+        reg::BGCNT[WORLD_BG].write(BgCnt::new().priority(SPRITE_PRIORITY).screen_block(WORLD_BLOCK).0);
+        reg::DISPCNT.write(BASE_DISPCNT);
+
         let (tx, ty) = world::START;
-        Self {
-            ppu,
+        let mut game = Self {
             input: Input::default(),
             rng: Rng::new(seed),
             world: World::new(),
@@ -105,17 +106,13 @@ impl Game {
             player: Player { tx, ty, px: tx * 16, py: ty * 16, facing: Dir::Down, step: 0, walk: 0 },
             mode: Mode::FadeIn(FADE_FRAMES),
             journal: [Record::default(); SPECIES.len()],
-            sram: [0; SRAM_SIZE],
-            sram_dirty: false,
-        }
+        };
+        game.load_save();
+        game
     }
 
-    pub fn framebuffer(&self) -> &[u32] {
-        self.ppu.framebuffer()
-    }
-
-    pub fn frame(&mut self, buttons: u8) {
-        self.input.update(buttons);
+    pub fn update(&mut self) {
+        self.input.update();
         self.frame = self.frame.wrapping_add(1);
         self.rng.next();
 
@@ -220,111 +217,100 @@ impl Game {
         TextBox::from_pages(pages)
     }
 
-    fn save(&mut self) {
-        self.sram = [0; SRAM_SIZE];
-        self.sram[..4].copy_from_slice(SRAM_MAGIC);
-        self.sram[4] = SRAM_VERSION;
+    /// Writes the journal to save RAM and asks the host to persist it.
+    fn save(&self) {
+        let sram = wasm_ad::save_ram();
+        sram[..4].copy_from_slice(SAVE_MAGIC);
+        sram[4] = SAVE_VERSION;
         for (i, r) in self.journal.iter().enumerate() {
             let at = 5 + i * 4;
-            self.sram[at..at + 2].copy_from_slice(&r.count.to_le_bytes());
-            self.sram[at + 2..at + 4].copy_from_slice(&r.best_cm.to_le_bytes());
+            sram[at..at + 2].copy_from_slice(&r.count.to_le_bytes());
+            sram[at + 2..at + 4].copy_from_slice(&r.best_cm.to_le_bytes());
         }
-        self.sram_dirty = true;
+        wasm_ad::request_save();
     }
 
-    /// Restores the journal after the host has written saved bytes into `sram`.
-    pub fn load_sram(&mut self) {
-        if &self.sram[..4] != SRAM_MAGIC || self.sram[4] != SRAM_VERSION {
+    fn load_save(&mut self) {
+        let sram = wasm_ad::save_ram();
+        if !wasm_ad::save_restored() || &sram[..4] != SAVE_MAGIC || sram[4] != SAVE_VERSION {
             return;
         }
         for (i, r) in self.journal.iter_mut().enumerate() {
             let at = 5 + i * 4;
-            r.count = u16::from_le_bytes([self.sram[at], self.sram[at + 1]]);
-            r.best_cm = u16::from_le_bytes([self.sram[at + 2], self.sram[at + 3]]);
+            r.count = u16::from_le_bytes([sram[at], sram[at + 1]]);
+            r.best_cm = u16::from_le_bytes([sram[at + 2], sram[at + 3]]);
         }
     }
 
     fn draw(&mut self) {
-        assets::animate(&mut self.ppu, &self.anim, self.frame);
+        assets::animate(&self.anim, self.frame);
 
         // Camera follows the player, clamped to the map; the visible part of
-        // the world is streamed into the wrapping 32×32 background map.
+        // the world is streamed into the wrapping 32×32 map.
         let p = &self.player;
         let cx = (p.px + 8 - SCREEN_W as i32 / 2).clamp(0, self.world.width_px() - SCREEN_W as i32);
         let cy = (p.py + 8 - SCREEN_H as i32 / 2).clamp(0, self.world.height_px() - SCREEN_H as i32);
-        let world_bg = &mut self.ppu.bg[WORLD_BG];
-        world_bg.priority = SPRITE_PRIORITY;
-        world_bg.hofs = cx as u16;
-        world_bg.vofs = cy as u16;
+        reg::BGHOFS[WORLD_BG].write(cx as u16);
+        reg::BGVOFS[WORLD_BG].write(cy as u16);
+        let map = screen_block(WORLD_BLOCK as usize);
         for ty in cy / 8..=(cy + SCREEN_H as i32 - 1) / 8 {
             for tx in cx / 8..=(cx + SCREEN_W as i32 - 1) / 8 {
-                world_bg.set(tx as usize, ty as usize, self.world.tile_at(tx, ty));
+                map[(ty as usize % 32) * 32 + tx as usize % 32] = self.world.tile_at(tx, ty);
             }
         }
 
         // Sprites; lower OAM slots draw on top.
         let (frame, flip) = self.player_frame();
-        let oam = &mut self.ppu.oam;
-        *oam = [Sprite::HIDDEN; OAM_SIZE];
-        let at = |x: i32, y: i32, size: SpriteSize, tile: u16, bank: u8| {
-            Sprite::new((x - cx) as i16, (y - cy) as i16, size, tile, bank).priority(SPRITE_PRIORITY)
+        oam::hide_all();
+        let at = |x: i32, y: i32, size: SpriteSize, tile: u16, bank: u16| {
+            Sprite::new(x - cx, y - cy, size, tile).bank(bank).priority(SPRITE_PRIORITY)
         };
         match &self.mode {
             Mode::Fish(fishing) => {
                 if fishing.alert() {
-                    oam[0] = at(p.px + 4, p.py - 10, SpriteSize::S8x8, obj_tile::BUBBLE, bank::BUBBLE);
+                    oam::set(0, at(p.px + 4, p.py - 10, SpriteSize::S8x8, obj_tile::BUBBLE, bank::BUBBLE));
                 }
                 let (bx, by, tile) = fishing.bobber();
-                oam[1] = at(bx, by, SpriteSize::S8x8, tile, bank::BOBBER);
+                oam::set(1, at(bx, by, SpriteSize::S8x8, tile, bank::BOBBER));
                 if let Some((rx, ry)) = fishing.ripple() {
-                    oam[2] = at(rx, ry, SpriteSize::W16x8, obj_tile::RIPPLE, bank::RIPPLE).semi_transparent();
+                    oam::set(2, at(rx, ry, SpriteSize::W16x8, obj_tile::RIPPLE, bank::RIPPLE).semi_transparent());
                 }
             }
             Mode::Message { held: Some(t), .. } => {
-                // The catch pops in with the affine unit: grow while wobbling.
+                // The catch pops in with an affine sprite: grow while wobbling.
                 let t = *t as f32;
                 let grow = (t / 12.0).min(1.0);
                 let scale = 0.3 + 0.7 * grow + 0.15 * (t * 0.5).sin() * (1.0 - grow);
                 let angle = (t * 0.35).sin() * 0.5 * (1.0 - (t / 40.0).min(1.0));
-                self.ppu.affine[0] = AffineMatrix::rotate_scale(angle, scale, scale);
+                oam::set_affine(0, AffineMatrix::rotate_scale(angle, scale, scale));
                 // Double-size: the 16×16 fish renders in a 32×32 box centred on it.
-                oam[3] = at(p.px - 8, p.py - 21, SpriteSize::S16x16, obj_tile::FISH, bank::FISH).affine(0, true);
+                oam::set(3, at(p.px - 8, p.py - 21, SpriteSize::S16x16, obj_tile::FISH, bank::FISH).affine(0, true));
             }
             _ => {}
         }
-        oam[8] = at(p.px, p.py, SpriteSize::S16x16, obj_tile::PLAYER + frame * 4, bank::PLAYER).hflip_if(flip);
+        oam::set(8, at(p.px, p.py, SpriteSize::S16x16, obj_tile::PLAYER + frame * 4, bank::PLAYER).hflip(flip));
 
         match &self.mode {
             Mode::Fish(fishing) => match fishing.hud() {
-                Some((tension, meters)) => draw_reel_hud(&mut self.ppu, tension, meters),
-                None => text::hide(&mut self.ppu),
+                Some((tension, meters)) => draw_reel_hud(tension, meters),
+                None => text::hide(),
             },
-            Mode::Message { text, .. } => text.draw(&mut self.ppu),
-            Mode::Walk | Mode::FadeIn(_) => text::hide(&mut self.ppu),
+            Mode::Message { text, .. } => text.draw(),
+            Mode::Walk | Mode::FadeIn(_) => text::hide(),
         }
 
-        self.ppu.blend = match self.mode {
-            Mode::FadeIn(t) => Blend {
-                mode: BlendMode::Darken,
-                top: layer::ALL,
-                bottom: 0,
-                eva: 0,
-                evb: 0,
-                evy: (t * 16 / FADE_FRAMES) as u8,
-            },
+        match self.mode {
+            Mode::FadeIn(t) => {
+                reg::BLDCNT.write(blend::cnt(blend::DARKEN, layer::ALL, 0));
+                reg::BLDY.write(t * 16 / FADE_FRAMES);
+            }
             // The text panel lets the world and sprites show through; the
             // same coefficients apply to semi-transparent sprites.
-            _ => Blend {
-                mode: BlendMode::Alpha,
-                top: layer::BG1,
-                bottom: layer::BG2 | layer::OBJ,
-                eva: 11,
-                evb: 5,
-                evy: 0,
-            },
-        };
-
-        self.ppu.render();
+            _ => {
+                reg::BLDCNT.write(blend::cnt(blend::ALPHA, layer::BG1, layer::BG2 | layer::OBJ));
+                reg::BLDALPHA.write(blend::alpha(11, 5));
+            }
+        }
     }
 
     /// Which of the six player frames to show, and whether to flip it.
@@ -341,76 +327,95 @@ impl Game {
     }
 }
 
-fn draw_reel_hud(ppu: &mut Ppu, tension: f32, meters: u16) {
-    text::show_panel(ppu);
-    text::put_text(ppu, 2, 1, "TENSION");
+fn draw_reel_hud(tension: f32, meters: u16) {
+    text::show_panel();
+    text::put_text(2, 1, "TENSION");
     let filled = (tension * 96.0) as usize;
     for i in 0..12 {
         let segment = filled.saturating_sub(i * 8).min(8) as u16;
-        text::put_tile(ppu, 11 + i, 1, assets::bg_tile::METER + segment);
+        text::put_tile(11 + i, 1, assets::bg_tile::METER + segment);
     }
-    text::put_text(ppu, 2, 3, &format!("LINE {meters:>3}M"));
-    text::put_text(ppu, 20, 3, "HOLD A");
+    text::put_text(2, 3, &format!("LINE {meters:>3}M"));
+    text::put_text(20, 3, "HOLD A");
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use wasm_ad::host;
 
-    fn run(game: &mut Game, buttons: u8, frames: usize) {
-        for _ in 0..frames {
-            game.frame(buttons);
+    struct Harness {
+        game: Game,
+        frame: u32,
+    }
+
+    impl Harness {
+        fn boot(seed: u32) -> Self {
+            host::boot(seed);
+            Self { game: Game::new(seed), frame: 0 }
+        }
+
+        fn run(&mut self, keys: u16, frames: usize) {
+            for _ in 0..frames {
+                host::frame(self.frame, keys, || self.game.update());
+                self.frame += 1;
+            }
         }
     }
 
     #[test]
-    fn sram_round_trips_the_journal() {
-        let mut game = Game::new(3);
-        game.catch(2, 44);
-        let saved = game.sram;
-        let mut restored = Game::new(4);
-        restored.sram = saved;
-        restored.load_sram();
+    fn save_ram_round_trips_the_journal() {
+        let mut h = Harness::boot(3);
+        h.game.catch(2, 44);
+        assert_eq!(wasm_ad::reg::SAVECNT.read() & 1, 1, "catch requests a save");
+
+        // Reboot with the same save RAM, as a host restoring it would.
+        let sram = wasm_ad::save_ram().to_vec();
+        host::boot(4);
+        wasm_ad::save_ram().copy_from_slice(&sram);
+        wasm_ad::reg::SAVESTAT.write(1);
+        let restored = Game::new(4);
         assert_eq!(restored.journal[2].count, 1);
         assert_eq!(restored.journal[2].best_cm, 44);
     }
 
     #[test]
     fn walks_and_casts_into_the_river() {
-        let mut game = Game::new(5);
+        let mut h = Harness::boot(5);
         // Fade in, let the intro type out, then press A through both pages.
-        run(&mut game, 0, 200);
-        run(&mut game, btn::A, 1);
-        run(&mut game, 0, 400);
-        run(&mut game, btn::A, 1);
-        run(&mut game, 0, 1);
-        assert!(matches!(game.mode, Mode::Walk));
+        h.run(0, 200);
+        h.run(btn::A, 1);
+        h.run(0, 400);
+        h.run(btn::A, 1);
+        h.run(0, 1);
+        assert!(matches!(h.game.mode, Mode::Walk));
 
         // From the start (7,5), walk right to (11,5), next to the river.
-        run(&mut game, btn::RIGHT, 16 * 4);
-        run(&mut game, 0, 4);
-        assert_eq!((game.player.tx, game.player.ty), (11, 5));
-        run(&mut game, btn::A, 1);
-        assert!(matches!(game.mode, Mode::Fish(_)));
+        h.run(btn::RIGHT, 16 * 4);
+        h.run(0, 4);
+        assert_eq!((h.game.player.tx, h.game.player.ty), (11, 5));
+        h.run(btn::A, 1);
+        assert!(matches!(h.game.mode, Mode::Fish(_)));
     }
 
     /// Plays a full catch like a careful player: strike on the bite, then
     /// reel while the tension stays below 70%.
     #[test]
     fn strike_and_reel_lands_a_fish() {
-        let mut game = Game::new(9);
-        game.mode = Mode::Walk;
-        (game.player.tx, game.player.ty, game.player.px, game.player.py) = (11, 5, 176, 80);
-        game.player.facing = Dir::Right;
-        run(&mut game, btn::A, 1);
+        let mut h = Harness::boot(9);
+        h.game.mode = Mode::Walk;
+        let p = &mut h.game.player;
+        (p.tx, p.ty, p.px, p.py) = (11, 5, 176, 80);
+        p.facing = Dir::Right;
+        h.run(btn::A, 1);
 
         let dump = std::env::var("RR_DUMP").ok();
         let mut dumped_bite = false;
         for _ in 0..60 * 60 {
-            let buttons = match &game.mode {
+            let keys = match &h.game.mode {
                 Mode::Fish(f) if f.alert() => {
                     if let (Some(dir), false) = (&dump, dumped_bite) {
-                        write_ppm(&game, dir, "bite");
+                        write_frame(dir, "bite");
                         dumped_bite = true;
                     }
                     btn::A
@@ -422,32 +427,28 @@ mod tests {
                 _ => break,
             };
             // Edge-triggered strike: release for a frame first.
-            if buttons == btn::A && !game.input.held(btn::A) {
-                game.frame(0);
+            if keys == btn::A && !h.game.input.held(btn::A) {
+                h.run(0, 1);
             }
-            game.frame(buttons);
+            h.run(keys, 1);
             if let Some(dir) = &dump {
-                if matches!(&game.mode, Mode::Fish(f) if f.hud().is_some()) {
-                    write_ppm(&game, dir, "reel");
+                if matches!(&h.game.mode, Mode::Fish(f) if f.hud().is_some()) {
+                    write_frame(dir, "reel");
                 }
             }
         }
-        assert!(matches!(game.mode, Mode::Message { held: Some(_), .. }), "expected a catch");
-        assert_eq!(game.journal.iter().map(|r| r.count).sum::<u16>(), 1);
+        assert!(matches!(h.game.mode, Mode::Message { held: Some(_), .. }), "expected a catch");
+        assert_eq!(h.game.journal.iter().map(|r| r.count).sum::<u16>(), 1);
         if let Some(dir) = &dump {
-            run(&mut game, 0, 6);
-            write_ppm(&game, dir, "caught-pop");
-            run(&mut game, 0, 60);
-            write_ppm(&game, dir, "caught");
+            h.run(0, 6);
+            write_frame(dir, "caught-pop");
+            h.run(0, 60);
+            write_frame(dir, "caught");
         }
     }
 
-    /// Writes the framebuffer as a PPM for eyeballing (`RR_DUMP=dir cargo test`).
-    fn write_ppm(game: &Game, dir: &str, name: &str) {
-        let mut out = format!("P6 {SCREEN_W} {SCREEN_H} 255\n").into_bytes();
-        for px in game.framebuffer() {
-            out.extend(&px.to_le_bytes()[..3]);
-        }
-        std::fs::write(format!("{dir}/{name}.ppm"), out).unwrap();
+    /// Renders the current frame to a PPM (`RR_DUMP=dir cargo test`).
+    fn write_frame(dir: &str, name: &str) {
+        host::write_ppm(format!("{dir}/{name}.ppm"), &host::render()).unwrap();
     }
 }

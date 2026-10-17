@@ -2,7 +2,7 @@
 
 use crate::assets::bg_tile;
 use crate::fishing::Waters;
-use crate::ppu::ScreenEntry;
+use wasm_ad::ScreenEntry;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Metatile {
@@ -30,7 +30,7 @@ impl Metatile {
         bg_tile::METATILES + self as u16 * 4
     }
 
-    pub fn palette(self) -> u8 {
+    pub fn palette(self) -> u16 {
         match self {
             Metatile::Grass => 0,
             Metatile::Water => 1,

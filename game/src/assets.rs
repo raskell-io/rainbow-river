@@ -6,7 +6,7 @@
 //! `art::bank_from_bytes(include_bytes!(…))`.
 
 use crate::art;
-use crate::ppu::{Ppu, Tile, rgb};
+use wasm_ad::{Tile4 as Tile, bg_palette, bg_tiles, obj_palette, obj_tiles, rgb};
 use crate::world::Metatile;
 
 /// Background tiles. Font glyphs sit at their ASCII codes (32–95), so text
@@ -37,14 +37,14 @@ pub mod obj_tile {
 
 pub mod bank {
     // Background banks 0–6 belong to the metatiles, see `Metatile::palette`.
-    pub const PANEL: u8 = 7;
-    pub const TEXT: u8 = 8;
+    pub const PANEL: u16 = 7;
+    pub const TEXT: u16 = 8;
     // Sprite banks.
-    pub const PLAYER: u8 = 0;
-    pub const BOBBER: u8 = 1;
-    pub const BUBBLE: u8 = 2;
-    pub const FISH: u8 = 3;
-    pub const RIPPLE: u8 = 4;
+    pub const PLAYER: u16 = 0;
+    pub const BOBBER: u16 = 1;
+    pub const BUBBLE: u16 = 2;
+    pub const FISH: u16 = 3;
+    pub const RIPPLE: u16 = 4;
 }
 
 const BACKDROP: u16 = rgb(16, 16, 24);
@@ -89,16 +89,19 @@ pub struct Animations {
     water: [Vec<Tile>; 2],
 }
 
-pub fn load(ppu: &mut Ppu) -> Animations {
-    ppu.bg_pal[0] = BACKDROP;
+/// Uploads palettes and tiles. Background tiles go to character block 0.
+pub fn load() -> Animations {
+    let bg_pal = bg_palette();
+    bg_pal[0] = BACKDROP;
     for (b, colors) in BG_BANKS.iter().enumerate() {
-        ppu.bg_pal[b * 16 + 1..][..colors.len()].copy_from_slice(colors);
+        bg_pal[b * 16 + 1..][..colors.len()].copy_from_slice(colors);
     }
+    let obj_pal = obj_palette();
     for (b, colors) in OBJ_BANKS.iter().enumerate() {
-        ppu.obj_pal[b * 16 + 1..][..colors.len()].copy_from_slice(colors);
+        obj_pal[b * 16 + 1..][..colors.len()].copy_from_slice(colors);
     }
 
-    let bg = &mut ppu.bg_tiles;
+    let bg = bg_tiles(0);
     put(bg, bg_tile::PANEL_CORNER, &art::tiles(&PANEL_CORNER));
     put(bg, bg_tile::PANEL_HEDGE, &art::tiles(&PANEL_HEDGE));
     put(bg, bg_tile::PANEL_VEDGE, &art::tiles(&PANEL_VEDGE));
@@ -114,7 +117,7 @@ pub fn load(ppu: &mut Ppu) -> Animations {
         put(bg, m.first_tile(), &art::opaque_tiles(metatile_art(m)));
     }
 
-    let obj = &mut ppu.obj_tiles;
+    let obj = obj_tiles();
     let player: Vec<Tile> = PLAYER.iter().flat_map(|frame| art::tiles(frame)).collect();
     put(obj, obj_tile::PLAYER, &player);
     put(obj, obj_tile::BOBBER, &art::tiles(&BOBBER));
@@ -127,10 +130,10 @@ pub fn load(ppu: &mut Ppu) -> Animations {
 }
 
 /// Called every frame: animates water by rewriting its tiles in VRAM.
-pub fn animate(ppu: &mut Ppu, anim: &Animations, frame: u32) {
+pub fn animate(anim: &Animations, frame: u32) {
     if frame % 32 == 0 {
         let phase = (frame / 32 % 2) as usize;
-        put(&mut ppu.bg_tiles, Metatile::Water.first_tile(), &anim.water[phase]);
+        put(bg_tiles(0), Metatile::Water.first_tile(), &anim.water[phase]);
     }
 }
 
@@ -566,7 +569,7 @@ mod tests {
 
     #[test]
     fn all_assets_load() {
-        let mut ppu = Ppu::new();
-        load(&mut ppu);
+        wasm_ad::host::boot(0);
+        load();
     }
 }

@@ -242,8 +242,10 @@ mod tests {
 
     #[test]
     fn reeling_through_calm_water_lands_a_weak_fish() {
+        wasm_ad::host::boot(0);
+        wasm_ad::reg::KEYS.write(btn::A);
         let mut input = Input::default();
-        input.update(btn::A);
+        input.update();
         let mut rng = Rng::new(1);
         let mut reel = Reel {
             species: 0,

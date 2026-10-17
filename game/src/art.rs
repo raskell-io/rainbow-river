@@ -5,7 +5,7 @@
 //! convention lower indices are lighter, which is also the order `assetc`
 //! emits for converted PixelLab art.
 
-use crate::ppu::Tile;
+use wasm_ad::Tile4 as Tile;
 
 /// Slices art whose sides are multiples of 8 into tiles, row-major. A 16×16
 /// image yields top-left, top-right, bottom-left, bottom-right, which is the

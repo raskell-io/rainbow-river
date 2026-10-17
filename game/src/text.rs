@@ -3,7 +3,8 @@
 
 use crate::assets::{bank, bg_tile};
 use crate::input::{Input, btn};
-use crate::ppu::{Ppu, SCREEN_H, ScreenEntry};
+use wasm_ad::addr::SCREEN_H;
+use wasm_ad::{ScreenEntry, dispcnt, reg, screen_block};
 
 pub const LINE_CHARS: usize = 26;
 pub const BOX_COLS: usize = 30;
@@ -11,9 +12,9 @@ pub const BOX_ROWS: usize = 5;
 /// Map row of the box's top edge.
 const BOX_ROW: usize = SCREEN_H / 8 - BOX_ROWS;
 const TEXT_COL: usize = 2;
-/// Background layers used by the box.
-const TEXT_BG: usize = 0;
-const PANEL_BG: usize = 1;
+/// Screen blocks holding the text (BG0) and panel (BG1) maps.
+pub const TEXT_BLOCK: u16 = 28;
+pub const PANEL_BLOCK: u16 = 29;
 
 pub struct TextBox {
     pages: Vec<[String; 2]>,
@@ -60,29 +61,27 @@ impl TextBox {
         false
     }
 
-    pub fn draw(&self, ppu: &mut Ppu) {
-        show_panel(ppu);
+    pub fn draw(&self) {
+        show_panel();
         let [a, b] = &self.pages[self.page];
-        put_text(ppu, TEXT_COL, 1, &a[..self.shown.min(a.len())]);
-        put_text(ppu, TEXT_COL, 3, &b[..self.shown.saturating_sub(a.len())]);
+        put_text(TEXT_COL, 1, &a[..self.shown.min(a.len())]);
+        put_text(TEXT_COL, 3, &b[..self.shown.saturating_sub(a.len())]);
         if self.shown == self.page_len() && self.frame / 16 % 2 == 0 {
-            put_tile(ppu, BOX_COLS - 3, 3, bg_tile::ARROW);
+            put_tile(BOX_COLS - 3, 3, bg_tile::ARROW);
         }
     }
 }
 
-/// Shows an empty box: clears the text layer and draws the panel.
-pub fn show_panel(ppu: &mut Ppu) {
+/// Shows an empty box: clears the text map, draws the panel and enables both layers.
+pub fn show_panel() {
     let last_col = BOX_COLS - 1;
     let last_row = BOX_ROWS - 1;
     let e = |tile| ScreenEntry::new(tile, bank::PANEL);
-    ppu.bg[TEXT_BG].enabled = true;
-    ppu.bg[TEXT_BG].clear();
-    let panel = &mut ppu.bg[PANEL_BG];
-    panel.enabled = true;
+    screen_block(TEXT_BLOCK as usize).fill(ScreenEntry::EMPTY);
+    let panel = screen_block(PANEL_BLOCK as usize);
     for row in 0..BOX_ROWS {
         for col in 0..BOX_COLS {
-            let entry = match (col, row) {
+            panel[(BOX_ROW + row) * 32 + col] = match (col, row) {
                 (0, 0) => e(bg_tile::PANEL_CORNER),
                 (c, 0) if c == last_col => e(bg_tile::PANEL_CORNER).hflip(),
                 (0, r) if r == last_row => e(bg_tile::PANEL_CORNER).vflip(),
@@ -93,25 +92,24 @@ pub fn show_panel(ppu: &mut Ppu) {
                 (c, _) if c == last_col => e(bg_tile::PANEL_VEDGE).hflip(),
                 _ => e(bg_tile::PANEL_FILL),
             };
-            panel.set(col, BOX_ROW + row, entry);
         }
     }
+    reg::DISPCNT.write(reg::DISPCNT.read() | dispcnt::BG0 | dispcnt::BG1);
 }
 
-pub fn hide(ppu: &mut Ppu) {
-    ppu.bg[TEXT_BG].enabled = false;
-    ppu.bg[PANEL_BG].enabled = false;
+pub fn hide() {
+    reg::DISPCNT.write(reg::DISPCNT.read() & !(dispcnt::BG0 | dispcnt::BG1));
 }
 
 /// Writes text at a column and row inside the box.
-pub fn put_text(ppu: &mut Ppu, col: usize, row: usize, text: &str) {
+pub fn put_text(col: usize, row: usize, text: &str) {
     for (i, b) in text.bytes().enumerate() {
-        put_tile(ppu, col + i, row, b as u16);
+        put_tile(col + i, row, b as u16);
     }
 }
 
-pub fn put_tile(ppu: &mut Ppu, col: usize, row: usize, tile: u16) {
-    ppu.bg[TEXT_BG].set(col, BOX_ROW + row, ScreenEntry::new(tile, bank::TEXT));
+pub fn put_tile(col: usize, row: usize, tile: u16) {
+    screen_block(TEXT_BLOCK as usize)[(BOX_ROW + row) * 32 + col] = ScreenEntry::new(tile, bank::TEXT);
 }
 
 fn wrap(msg: &str) -> Vec<String> {
