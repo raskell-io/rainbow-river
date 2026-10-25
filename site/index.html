@@ -4,10 +4,78 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Rainbow River · a pocket fishing game</title>
-  <meta name="description" content="Rainbow River is a fishing game in the spirit of The Legend of the River King. Cast, wait for the bite, reel it in — free in your browser, on the WASM-AD fantasy console.">
+  <meta name="description" content="A fishing game in the style of the 32-bit handhelds, inspired by The Legend of the River King. The first WASM-AD cartridge, free in your browser.">
+  <link rel="canonical" href="https://rainbowriver.raskell.io/">
+  <meta name="author" content="Raffael Schneider">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://rainbowriver.raskell.io/">
   <meta property="og:title" content="Rainbow River">
   <meta property="og:description" content="A pocket fishing game for the WASM-AD fantasy console. Free in your browser.">
-  <meta property="og:image" content="assets/hero.png">
+  <meta property="og:image" content="https://rainbowriver.raskell.io/assets/hero.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="alternate" type="text/markdown" title="llms.txt" href="/llms.txt">
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": [
+        "VideoGame",
+        "SoftwareApplication"
+      ],
+      "@id": "https://rainbowriver.raskell.io/#game",
+      "name": "Rainbow River",
+      "description": "A fishing game in the style of the 32-bit handhelds, inspired by The Legend of the River King. Walk the river, read the water, and fill a fish log of hand-drawn species. Written in Rust, compiled to WebAssembly, and the first cartridge for WASM-AD. It plays in the browser.",
+      "url": "https://rainbowriver.raskell.io/",
+      "applicationCategory": "GameApplication",
+      "genre": "Fishing",
+      "gamePlatform": "WASM-AD",
+      "operatingSystem": "Web browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "isAccessibleForFree": true,
+      "license": "https://opensource.org/licenses/MIT",
+      "image": "https://rainbowriver.raskell.io/assets/hero.png",
+      "codeRepository": "https://github.com/raskell-io/rainbow-river",
+      "sameAs": [
+        "https://github.com/raskell-io/rainbow-river",
+        "https://raskell.io/apps/"
+      ],
+      "isBasedOn": {
+        "@type": "SoftwareApplication",
+        "name": "WASM-AD",
+        "url": "https://wasmad.raskell.io/"
+      },
+      "inLanguage": "en",
+      "author": {
+        "@type": "Person",
+        "@id": "https://raskell.io/#person",
+        "name": "Raffael Schneider",
+        "url": "https://raskell.io/"
+      },
+      "creator": {
+        "@type": "Person",
+        "@id": "https://raskell.io/#person",
+        "name": "Raffael Schneider",
+        "url": "https://raskell.io/"
+      }
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://rainbowriver.raskell.io/#website",
+      "name": "Rainbow River",
+      "url": "https://rainbowriver.raskell.io/",
+      "inLanguage": "en",
+      "publisher": {
+        "@id": "https://raskell.io/#person"
+      }
+    }
+  ]
+}
+  </script>
   <link rel="icon" href="assets/fish/trout.png" type="image/png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -356,7 +424,7 @@
 
   <footer class="footer">
     <p class="foot-brand"><span class="rainbow">Rainbow</span> <span class="river">River</span></p>
-    <p>MIT-licensed, made by <a href="https://www.raskell.io">raskell.io</a>. Inspired by, and not affiliated with, <i>The Legend of the River King</i>.</p>
+    <p>MIT-licensed, made by <a href="https://raskell.io/" rel="author">raskell.io</a>. Inspired by, and not affiliated with, <i>The Legend of the River King</i>.</p>
     <p class="dim">Pixel art generated with PixelLab.</p>
   </footer>
 

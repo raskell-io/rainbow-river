@@ -1,0 +1,18 @@
+# Rainbow River
+
+> A fishing game in the style of the 32-bit handhelds, inspired by The Legend of the River King, and the first cartridge for the WASM-AD fantasy console.
+
+Rainbow River is a small fishing game. You walk the riverbank, cast into the current or the still pond, strike when the bobber sinks, and reel in while keeping the line tension below the breaking point. Every catch is measured and goes into a fish log of nine hand-drawn species (five in the river, four in the pond), which is kept in WASM-AD save RAM on your device. It is written in Rust and compiled to a single WebAssembly module that runs in any WASM-AD player. It plays in the browser on this site, free, with a keyboard, a gamepad, or the on-screen buttons on a phone. Keyboard: arrows to walk, hold Z to run, X to cast, strike and reel, Enter for the fish log. MIT licence. Inspired by, and not affiliated with, The Legend of the River King.
+
+## Links
+
+- [Rainbow River](https://rainbowriver.raskell.io/): play in the browser
+- [Source](https://github.com/raskell-io/rainbow-river): the game, in Rust
+- [raskell.io apps](https://raskell.io/apps/): Rainbow River in the list of apps
+- [Author](https://raskell.io/about/): Raffael Schneider
+
+## Optional
+
+- [WASM-AD](https://wasmad.raskell.io/): the fantasy console this cartridge runs on, with its spec, SDKs and web player ([llms.txt](https://wasmad.raskell.io/llms.txt))
+- [WASM-AD specification](https://wasmad.raskell.io/spec.html)
+- [Cartridge file](https://rainbowriver.raskell.io/carts/rainbow-river.wasm): the game as one .wasm module, playable in any WASM-AD player
